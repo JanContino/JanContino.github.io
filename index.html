@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSPD — CLASSIFIED ACCESS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #010509;
+  --surface: #050d18;
+  --surface2: #091422;
+  --blue: #00aaff;
+  --blue2: #0066cc;
+  --blue-dim: rgba(0,170,255,0.08);
+  --gold: #ffcc00;
+  --gold-dim: rgba(255,204,0,0.1);
+  --red: #ff003c;
+  --green: #00ff88;
+  --white: #e0f0ff;
+  --muted: #2a4a6a;
+  --muted2: #1a3a5a;
+  --glow: 0 0 30px rgba(0,170,255,0.5);
+  --glow-gold: 0 0 30px rgba(255,204,0,0.4);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{background:var(--bg);color:var(--white);font-family:'Rajdhani',sans-serif;overflow:hidden;width:100vw;height:100vh;}
+
+/* ─── SCANLINES ─── */
+#scan{position:fixed;inset:0;z-index:9990;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);}
+
+/* ─── CANVAS ─── */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ─── PAGES ─── */
+.page{position:fixed;inset:0;z-index:10;display:none;overflow:hidden;}
+.page.active{display:flex;}
+
+/* ═══════════════════════════════════════
+   MAIN APP (after login)
+═══════════════════════════════════════ */
+#page-app{flex-direction:column;display:none;}
+#page-app.active{display:flex;}
+
+/* ─── TOP NAV ─── */
+.app-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;background:rgba(1,5,9,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,170,255,0.1);display:flex;align-items:center;padding:0 30px;gap:0;}
+
+.nav-logo-app{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;letter-spacing:5px;color:var(--white);display:flex;align-items:center;gap:10px;margin-right:40px;flex-shrink:0;}
+.nav-logo-app .star{color:var(--gold);text-shadow:var(--glow-gold);}
+
+.nav-tabs{display:flex;gap:0;flex:1;overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+
+.nav-tab{padding:0 20px;height:60px;display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s,background .2s;white-space:nowrap;user-select:none;position:relative;}
+.nav-tab:hover{color:var(--white);background:rgba(0,170,255,0.03);}
+.nav-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.nav-tab .tab-num{font-size:9px;opacity:0.5;}
+
+.nav-right{display:flex;align-items:center;gap:16px;flex-shrink:0;margin-left:20px;}
+.nav-badge-live{display:flex;align-items:center;gap:6px;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--green);letter-spacing:2px;}
+.live-dot{width:5px;height:5px;background:var(--green);border-radius:50%;animation:blink 1.5s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+/* ─── PAGES CONTAINER ─── */
+.app-pages{flex:1;overflow:hidden;position:relative;margin-top:60px;}
+.app-page{position:absolute;inset:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,170,255,0.2) transparent;display:none;scroll-behavior:smooth;}
+.app-page.active{display:block;}
+.app-page::-webkit-scrollbar{width:4px;}
+.app-page::-webkit-scrollbar-thumb{background:rgba(0,170,255,0.2);border-radius:2px;}
+
+/* ─── SECTION LAYOUT ─── */
+.s{padding:80px 60px;max-width:1400px;margin:0 auto;}
+.s-sm{padding:60px 60px;}
+
+.s-tag{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:5px;display:flex;align-items:center;gap:10px;margin-bottom:16px;text-transform:uppercase;}
+.s-tag::before{content:'';width:20px;height:1px;background:var(--blue);}
+
+.s-h{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(36px,5vw,72px);letter-spacing:2px;line-height:0.9;margin-bottom:50px;}
+.s-h .a{color:var(--blue);text-shadow:0 0 40px rgba(0,170,255,0.4);}
+.s-h .g{color:var(--gold);text-shadow:var(--glow-gold);}
+
+/* ═══════════════════════════════════════
+   PAGE 1 — HERO / INTRO
+═══════════════════════════════════════ */
+.hero-page{min-height:calc(100vh - 60px);display:flex;flex-direction:column;}
+
+.hero-cinematic{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:80vh;}
+.hero-bg-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(0,170,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,0.025) 1px,transparent 1px);background-size:80px 80px;}
+.hero-center-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(ellipse,rgba(0,100,255,0.08) 0%,transparent 70%);pointer-events:none;}
+
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;padding:0 60px;width:100%;max-width:1400px;}
+
+/* HERO LEFT */
+.hero-left{}
+.hero-eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:5px;margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+.hero-eyebrow-line{width:40px;height:1px;background:var(--blue);}
+
+.hero-main-title{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(50px,7vw,90px);line-height:0.85;letter-spacing:-1px;margin-bottom:24px;}
+.hero-main-title .t1{color:var(--white);display:block;}
+.hero-main-title .t2{color:var(--blue);display:block;text-shadow:0 0 60px rgba(0,170,255,0.5),0 0 120px rgba(0,170,255,0.2);}
+.hero-main-title .t3{color:var(--gold);display:block;font-size:0.5em;letter-spacing:8px;text-shadow:var(--glow-gold);}
+
+.hero-desc{font-size:17px;font-weight:400;color:rgba(224,240,255,0.6);line-height:1.7;margin-bottom:40px;max-width:420px;}
+
+.hero-cta-row{display:flex;gap:12px;flex-wrap:wrap;}
+.btn-primary{padding:14px 28px;background:var(--blue);border:none;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--bg);cursor:pointer;transition:box-shadow .3s,transform .2s;text-transform:uppercase;}
+.btn-primary:hover{box-shadow:0 0 40px rgba(0,170,255,0.6);transform:translateY(-2px);}
+.btn-outline{padding:14px 28px;background:transparent;border:1px solid rgba(0,170,255,0.3);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--blue);cursor:pointer;transition:border-color .3s,background .3s;text-transform:uppercase;}
+.btn-outline:hover{border-color:var(--blue);background:rgba(0,170,255,0.05);}
+
+/* HERO RIGHT — BIG BADGE */
+.hero-right{display:flex;align-items:center;justify-content:center;}
+.big-badge-wrap{position:relative;width:300px;height:300px;}
+.big-badge-svg{width:100%;height:100%;filter:drop-shadow(0 0 30px rgba(0,170,255,0.6)) drop-shadow(0 0 60px rgba(255,204,0,0.2));animation:badge-breathe 4s ease-in-out infinite;}
+@keyframes badge-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.bb-orbit{position:absolute;inset:-30px;border:1px dashed rgba(0,170,255,0.15);border-radius:50%;animation:spin 18s linear infinite;}
+.bb-dot{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:8px;height:8px;background:var(--blue);border-radius:50%;box-shadow:0 0 16px var(--blue);}
+.bb-orbit2{position:absolute;inset:-55px;border:1px solid rgba(255,204,0,0.08);border-radius:50%;animation:spin 30s linear infinite reverse;}
+.bb-dot2{position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:6px;height:6px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px var(--gold);}
+.bb-orbit3{position:absolute;inset:-80px;border:1px dashed rgba(0,170,255,0.06);border-radius:50%;animation:spin 45s linear infinite;}
+.bb-dot3{position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:var(--blue);border-radius:50%;opacity:0.5;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* STATS ROW */
+.hero-stats-row{background:var(--surface);border-top:1px solid rgba(0,170,255,0.08);border-bottom:1px solid rgba(0,170,255,0.08);display:grid;grid-template-columns:repeat(5,1fr);}
+.hero-stat{padding:28px 20px;text-align:center;border-right:1px solid rgba(0,170,255,0.06);}
+.hero-stat:last-child{border-right:none;}
+.hs-num{font-family:'Orbitron',monospace;font-weight:900;font-size:32px;color:var(--blue);display:block;line-height:1;}
+.hs-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;display:block;margin-top:6px;text-transform:uppercase;}
+
+/* ABOUT MINI */
+.about-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-top:50px;}
+.am-card{background:var(--surface);padding:24px;transition:background .2s;}
+.am-card:hover{background:var(--surface2);}
+.am-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:3px;display:block;margin-bottom:10px;text-transform:uppercase;}
+.am-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--white);letter-spacing:1px;}
+
+/* ═══════════════════════════════════════
+   PAGE 2 — RANKS
+═══════════════════════════════════════ */
+.ranks-page{}
+
+.rank-tabs{display:flex;gap:2px;margin-bottom:30px;}
+.rtab{padding:10px 24px;background:var(--surface);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.rtab:hover{color:var(--white);background:var(--surface2);}
+.rtab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+.rank-tier-wrap{display:none;}
+.rank-tier-wrap.active{display:block;}
+
+.tier-header-bar{display:grid;grid-template-columns:60px 1fr 1fr 100px;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(0,170,255,0.1);margin-bottom:1px;}
+.tier-col{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+
+.rank-entry{display:grid;grid-template-columns:60px 1fr 1fr 100px;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.02);transition:background .15s,transform .2s;cursor:default;}
+.rank-entry:hover{background:rgba(0,170,255,0.04);transform:translateX(6px);}
+.rank-entry:hover .re-num{color:var(--gold);}
+
+.re-num{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--blue);letter-spacing:1px;transition:color .2s;}
+.re-tier-gold .re-num{color:var(--gold);}
+
+.re-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;color:var(--white);letter-spacing:1px;}
+.re-desc{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.re-badge{display:inline-block;padding:3px 10px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;}
+.re-badge.gold{background:rgba(255,204,0,0.1);color:var(--gold);border:1px solid rgba(255,204,0,0.2);}
+.re-badge.blue{background:rgba(0,170,255,0.1);color:var(--blue);border:1px solid rgba(0,170,255,0.2);}
+.re-badge.grey{background:rgba(255,255,255,0.03);color:var(--muted);border:1px solid rgba(255,255,255,0.08);}
+
+/* ═══════════════════════════════════════
+   PAGE 3 — DEPARTMENTS
+═══════════════════════════════════════ */
+.dept-hero{position:relative;height:280px;display:flex;align-items:flex-end;padding:40px 60px;margin-bottom:2px;overflow:hidden;background:linear-gradient(135deg,rgba(0,40,100,0.3),rgba(0,10,30,0.8));}
+.dept-hero-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,170,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,0.04) 1px,transparent 1px);background-size:40px 40px;}
+.dept-hero-title{font-family:'Orbitron',monospace;font-weight:900;font-size:60px;color:var(--white);letter-spacing:4px;position:relative;z-index:1;text-shadow:0 0 60px rgba(0,170,255,0.3);}
+.dept-hero-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:4px;position:relative;z-index:1;margin-bottom:12px;}
+
+.dept-main-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;}
+.dept-big{grid-column:span 2;}
+.dept-card-new{background:var(--surface);padding:40px;position:relative;overflow:hidden;transition:background .3s;cursor:default;}
+.dept-card-new:hover{background:var(--surface2);}
+.dept-card-new:hover .dc-bar{transform:scaleX(1);}
+.dept-card-new:hover .dc-ghost{opacity:0.07;transform:scale(1.05) translateX(-3%);}
+
+.dc-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--gold));transform:scaleX(0);transform-origin:left;transition:transform .5s ease;}
+.dc-ghost{position:absolute;bottom:-20px;right:-10px;font-family:'Orbitron',monospace;font-weight:900;font-size:90px;color:var(--white);opacity:0.025;transition:opacity .3s,transform .3s;pointer-events:none;line-height:1;letter-spacing:-3px;}
+.dc-abbr{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:4px;margin-bottom:16px;display:block;}
+.dc-name{font-family:'Orbitron',monospace;font-weight:700;font-size:24px;letter-spacing:2px;color:var(--white);margin-bottom:16px;line-height:1.1;}
+.dc-desc{font-size:15px;font-weight:400;color:rgba(224,240,255,0.55);line-height:1.7;}
+.dc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px;}
+.dc-tag{padding:4px 10px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--blue);border:1px solid rgba(0,170,255,0.2);background:rgba(0,170,255,0.05);}
+
+/* ═══════════════════════════════════════
+   PAGE 4 — GOALS / VISION
+═══════════════════════════════════════ */
+.vision-hero{background:linear-gradient(135deg,rgba(0,60,150,0.15),rgba(255,180,0,0.05));border:1px solid rgba(0,170,255,0.1);padding:50px 60px;margin-bottom:2px;position:relative;overflow:hidden;}
+.vision-hero::before{content:'VISION';position:absolute;right:-20px;top:-40px;font-family:'Orbitron',monospace;font-weight:900;font-size:160px;color:rgba(0,170,255,0.03);pointer-events:none;letter-spacing:-5px;}
+.vision-hero-text{font-family:'Orbitron',monospace;font-weight:300;font-size:clamp(18px,2.5vw,28px);color:var(--white);line-height:1.4;position:relative;z-index:1;max-width:800px;}
+.vision-hero-text strong{color:var(--blue);}
+
+.goals-mega-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.goal-mega{background:var(--surface);padding:30px;position:relative;overflow:hidden;cursor:default;transition:background .2s;}
+.goal-mega:hover{background:var(--surface2);}
+.goal-mega:hover .gm-num{color:var(--gold);text-shadow:var(--glow-gold);}
+.goal-mega:hover .gm-bar{width:100%;}
+.gm-bar{position:absolute;bottom:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--blue),var(--gold));transition:width .5s ease;}
+.gm-num{font-family:'Orbitron',monospace;font-size:48px;font-weight:900;color:rgba(0,170,255,0.12);line-height:1;margin-bottom:16px;transition:color .3s,text-shadow .3s;}
+.gm-text{font-size:16px;font-weight:600;color:var(--white);line-height:1.5;letter-spacing:0.3px;}
+
+.collab-section-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:2px;}
+.collab-big{grid-column:span 2;background:var(--surface);padding:50px;border-top:3px solid var(--blue);position:relative;overflow:hidden;}
+.collab-big::after{content:'COLLAB';position:absolute;right:-10px;bottom:-30px;font-family:'Orbitron',monospace;font-weight:900;font-size:120px;color:rgba(0,170,255,0.04);pointer-events:none;letter-spacing:-3px;}
+.collab-big h3{font-family:'Orbitron',monospace;font-weight:700;font-size:28px;color:var(--gold);margin-bottom:20px;letter-spacing:2px;}
+.collab-big p{font-size:16px;color:rgba(224,240,255,0.55);line-height:1.7;max-width:800px;margin-bottom:24px;}
+.collab-sm{background:var(--surface);padding:36px;transition:background .2s;}
+.collab-sm:hover{background:var(--surface2);}
+.collab-sm h4{font-family:'Orbitron',monospace;font-weight:700;font-size:18px;color:var(--gold);margin-bottom:12px;letter-spacing:2px;}
+.collab-sm p{font-size:14px;color:rgba(224,240,255,0.5);line-height:1.6;}
+.collab-tag{display:inline-block;margin:4px;padding:5px 12px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--blue);border:1px solid rgba(0,170,255,0.25);background:rgba(0,170,255,0.05);transition:all .2s;cursor:default;}
+.collab-tag:hover{color:var(--white);background:rgba(0,170,255,0.12);border-color:var(--blue);}
+
+/* ═══════════════════════════════════════
+   PAGE 5 — EXPERIENCE
+═══════════════════════════════════════ */
+.exp-header-strip{display:flex;align-items:center;justify-content:space-between;padding:30px 60px;background:var(--surface);border-bottom:1px solid rgba(0,170,255,0.08);margin-bottom:2px;}
+.exp-count-display{display:flex;gap:40px;}
+.ecd-item{text-align:center;}
+.ecd-num{font-family:'Orbitron',monospace;font-weight:900;font-size:40px;color:var(--blue);display:block;line-height:1;}
+.ecd-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;display:block;margin-top:4px;}
+
+.exp-main-layout{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 0 60px;}
+
+.exp-server-block{background:var(--surface);position:relative;overflow:hidden;}
+.esb-header{padding:40px 40px 30px;border-bottom:1px solid rgba(0,170,255,0.08);background:linear-gradient(135deg,rgba(0,50,120,0.15),transparent);position:relative;}
+.esb-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),transparent);}
+.esb-server-name{font-family:'Orbitron',monospace;font-weight:900;font-size:26px;color:var(--gold);letter-spacing:3px;margin-bottom:8px;text-shadow:var(--glow-gold);}
+.esb-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:3px;}
+.esb-roles{padding:20px 40px;}
+.esb-role{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);transition:padding .2s;}
+.esb-role:hover{padding-left:8px;}
+.esb-role:hover .esb-r-dot{background:var(--gold);box-shadow:0 0 8px var(--gold);}
+.esb-r-dot{width:5px;height:5px;background:var(--blue);border-radius:50%;box-shadow:0 0 6px var(--blue);flex-shrink:0;transition:background .2s,box-shadow .2s;}
+.esb-r-text{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:17px;color:var(--white);letter-spacing:0.5px;}
+.esb-r-badge{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 8px;background:rgba(0,170,255,0.08);color:var(--blue);border:1px solid rgba(0,170,255,0.15);flex-shrink:0;}
+.esb-r-badge.leader{background:rgba(255,204,0,0.08);color:var(--gold);border-color:rgba(255,204,0,0.2);}
+
+/* ═══════════════════════════════════════
+   PAGE 6 — ABOUT / CLOSING
+═══════════════════════════════════════ */
+.about-hero-strip{background:linear-gradient(135deg,rgba(0,80,180,0.12),rgba(255,180,0,0.06));border:1px solid rgba(0,170,255,0.1);padding:60px;margin-bottom:2px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;}
+.about-hero-left .big-quote{font-family:'Orbitron',monospace;font-weight:700;font-size:clamp(18px,2vw,26px);color:var(--white);line-height:1.4;margin-bottom:24px;}
+.about-hero-left .bq-mark{font-size:80px;color:rgba(0,170,255,0.15);font-family:'Orbitron',sans-serif;line-height:0.7;display:block;margin-bottom:16px;}
+.about-hero-left .quote-by{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);letter-spacing:3px;}
+.about-hero-right{}
+.info-table{display:flex;flex-direction:column;gap:1px;}
+.it-row{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:rgba(0,0,0,0.3);}
+.it-key{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.it-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--white);letter-spacing:1px;}
+
+.pillar-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-bottom:2px;}
+.pillar-card{background:var(--surface);padding:36px;transition:background .2s,transform .2s;cursor:default;border-left:3px solid transparent;}
+.pillar-card:hover{background:var(--surface2);border-left-color:var(--blue);transform:translateX(4px);}
+.pc-num{font-family:'Orbitron',monospace;font-size:48px;font-weight:900;color:rgba(0,170,255,0.1);line-height:1;margin-bottom:12px;transition:color .2s;}
+.pillar-card:hover .pc-num{color:rgba(0,170,255,0.25);}
+.pc-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;letter-spacing:2px;color:var(--white);margin-bottom:10px;text-transform:uppercase;}
+.pc-text{font-size:15px;color:rgba(224,240,255,0.55);line-height:1.6;font-weight:400;}
+
+.closing-banner{position:relative;overflow:hidden;padding:100px 60px;text-align:center;background:linear-gradient(135deg,rgba(0,40,120,0.2),rgba(0,10,30,0.8));margin-top:2px;}
+.cb-grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,170,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,0.03) 1px,transparent 1px);background-size:60px 60px;}
+.cb-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(0,80,200,0.12) 0%,transparent 70%);}
+.cb-pre{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:5px;margin-bottom:20px;position:relative;}
+.cb-name{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(50px,10vw,120px);letter-spacing:4px;color:var(--white);text-shadow:0 0 80px rgba(0,170,255,0.35);position:relative;line-height:0.9;}
+.cb-title{font-family:'Orbitron',monospace;font-weight:400;font-size:clamp(14px,2vw,22px);letter-spacing:8px;color:var(--blue);margin-top:20px;position:relative;text-shadow:0 0 30px rgba(0,170,255,0.5);}
+.cb-thanks{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:3px;margin-top:30px;position:relative;line-height:1.8;}
+
+/* ─── REVEAL ANIMATION ─── */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;padding:0 30px;}
+  .hero-right{display:none;}
+  .hero-stats-row{grid-template-columns:repeat(3,1fr);}
+  .dept-main-grid{grid-template-columns:1fr;}
+  .dept-big{grid-column:span 1;}
+  .goals-mega-grid{grid-template-columns:repeat(2,1fr);}
+  .collab-section-grid{grid-template-columns:1fr;}
+  .collab-big{grid-column:span 1;}
+  .exp-main-layout{grid-template-columns:1fr;}
+  .about-hero-strip{grid-template-columns:1fr;}
+  .pillar-grid{grid-template-columns:1fr;}
+  .s{padding:50px 24px;}
+  .s-sm{padding:40px 24px;}
+  .hero-stats-row .hero-stat:nth-child(4),.hero-stats-row .hero-stat:nth-child(5){display:none;}
+  .closing-banner{padding:60px 24px;}
+}
+</style>
+</head>
+<body>
+
+<div id="scan"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══════════════════════════════════
+     MAIN APP
+═══════════════════════════════════ -->
+<div class="page active" id="page-app" style="display:flex;">
+
+  <!-- TOP NAV -->
+  <nav class="app-nav">
+    <div class="nav-logo-app"><span class="star">★</span> LSPD</div>
+    <div class="nav-tabs" id="nav-tabs">
+      <div class="nav-tab active" onclick="showTab(0)"><span class="tab-num">01</span> INTRO</div>
+      <div class="nav-tab" onclick="showTab(1)"><span class="tab-num">02</span> RANGSTRUKTUR</div>
+      <div class="nav-tab" onclick="showTab(2)"><span class="tab-num">03</span> ABTEILUNGEN</div>
+      <div class="nav-tab" onclick="showTab(3)"><span class="tab-num">04</span> VISION & ZIELE</div>
+      <div class="nav-tab" onclick="showTab(4)"><span class="tab-num">05</span> ERFAHRUNGEN</div>
+      <div class="nav-tab" onclick="showTab(5)"><span class="tab-num">06</span> ÜBER MICH</div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-badge-live"><div class="live-dot"></div>ONLINE</div>
+    </div>
+  </nav>
+
+  <!-- PAGES -->
+  <div class="app-pages">
+
+    <!-- PAGE 0: INTRO -->
+    <div class="app-page active" id="tab-0">
+      <div class="hero-page">
+        <div class="hero-cinematic">
+          <div class="hero-bg-lines"></div>
+          <div class="hero-center-glow"></div>
+          <div class="hero-inner">
+            <div class="hero-left">
+              <div class="hero-eyebrow reveal"><div class="hero-eyebrow-line"></div>Chief of Police · Leader Application</div>
+              <h1 class="hero-main-title reveal">
+                <span class="t1">LOS</span>
+                <span class="t2">SANTOS</span>
+                <span class="t3">POLICE DEPT.</span>
+              </h1>
+              <p class="hero-desc reveal">Eine vollständige Bewerbung und Konzept für die Fraktion des Los Santos Police Departments — eingereicht von Jan Contino, ID 4310.</p>
+              <div class="hero-cta-row reveal">
+                <button class="btn-primary" onclick="showTab(1)">RANGSTRUKTUR →</button>
+                <button class="btn-outline" onclick="showTab(5)">ÜBER MICH</button>
+              </div>
+            </div>
+            <div class="hero-right reveal">
+              <div class="big-badge-wrap">
+                <div class="bb-orbit"><div class="bb-dot"></div></div>
+                <div class="bb-orbit2"><div class="bb-dot2"></div></div>
+                <div class="bb-orbit3"><div class="bb-dot3"></div></div>
+                <svg class="big-badge-svg" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="150" cy="150" r="145" stroke="#00aaff" stroke-width="1" stroke-dasharray="8 5" opacity="0.4"/>
+                  <circle cx="150" cy="150" r="130" stroke="rgba(255,204,0,0.15)" stroke-width="0.5"/>
+                  <path d="M150 30 L240 72 L240 155 Q240 232 150 270 Q60 232 60 155 L60 72 Z" fill="#050d18" stroke="#ffcc00" stroke-width="2.5"/>
+                  <path d="M150 50 L225 86 L225 155 Q225 218 150 250 Q75 218 75 155 L75 86 Z" fill="#010509" stroke="#00aaff" stroke-width="1.2" opacity="0.7"/>
+                  <line x1="90" y1="100" x2="210" y2="100" stroke="#00aaff" stroke-width="0.5" opacity="0.2"/>
+                  <polygon points="150,85 162,122 202,122 170,145 182,182 150,159 118,182 130,145 98,122 138,122" fill="#ffcc00" opacity="0.95"/>
+                  <polygon points="150,100 158,123 183,123 163,137 170,160 150,146 130,160 137,137 117,123 142,123" fill="rgba(1,5,9,0.5)"/>
+                  <text x="150" y="210" text-anchor="middle" font-family="'Orbitron',monospace" font-size="16" font-weight="900" fill="#00aaff" letter-spacing="5">LSPD</text>
+                  <text x="150" y="228" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="9" fill="#2a4a6a" letter-spacing="3">LOS SANTOS</text>
+                  <line x1="90" y1="206" x2="125" y2="206" stroke="#00aaff" stroke-width="1" opacity="0.4"/>
+                  <line x1="175" y1="206" x2="210" y2="206" stroke="#00aaff" stroke-width="1" opacity="0.4"/>
+                  <rect x="80" y="80" width="8" height="8" fill="none" stroke="#ffcc00" stroke-width="1" opacity="0.4"/>
+                  <rect x="212" y="80" width="8" height="8" fill="none" stroke="#ffcc00" stroke-width="1" opacity="0.4"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="hero-stats-row reveal">
+          <div class="hero-stat"><span class="hs-num">25</span><span class="hs-label">Ränge</span></div>
+          <div class="hero-stat"><span class="hs-num">5</span><span class="hs-label">Abteilungen</span></div>
+          <div class="hero-stat"><span class="hs-num">6-9</span><span class="hs-label">Std/Tag</span></div>
+          <div class="hero-stat"><span class="hs-num">20+</span><span class="hs-label">Neue Member</span></div>
+          <div class="hero-stat"><span class="hs-num">17+</span><span class="hs-label">Positionen</span></div>
+        </div>
+
+        <!-- ABOUT MINI -->
+        <div class="s s-sm">
+          <div class="s-tag">Bewerber-Profil</div>
+          <div class="about-mini-grid reveal">
+            <div class="am-card"><span class="am-label">Vollständiger Name</span><div class="am-val">Jan Contino</div></div>
+            <div class="am-card"><span class="am-label">Static ID</span><div class="am-val">4310</div></div>
+            <div class="am-card"><span class="am-label">Discord</span><div class="am-val" style="font-family:'Share Tech Mono';font-size:14px">Jan1308</div></div>
+            <div class="am-card"><span class="am-label">Bewerbung für</span><div class="am-val" style="color:var(--gold);text-shadow:var(--glow-gold)">Chief of Police</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 1: RANKS -->
+    <div class="app-page" id="tab-1">
+      <div class="s">
+        <div class="s-tag">02 — Rangstruktur</div>
+        <h2 class="s-h reveal">25 Ränge.<br><span class="a">Klare</span> <span class="g">Ordnung.</span></h2>
+
+        <div class="rank-tabs reveal">
+          <div class="rtab active" onclick="showRankTier(0)">★ Leitungsebene</div>
+          <div class="rtab" onclick="showRankTier(1)">◆ High Command</div>
+          <div class="rtab" onclick="showRankTier(2)">◈ Mitglieder Ränge</div>
+          <div class="rtab" onclick="showRankTier(3)">Alle anzeigen</div>
+        </div>
+
+        <!-- LEITUNGSEBENE -->
+        <div class="rank-tier-wrap active" id="rtier-0">
+          <div class="tier-header-bar"><div class="tier-col">RANG</div><div class="tier-col">BEZEICHNUNG</div><div class="tier-col">FUNKTION</div><div class="tier-col">EBENE</div></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">25</span><span class="re-name">Chief of Police</span><span class="re-desc">Leader des LSPD</span><span class="re-badge gold">LEADER</span></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">24</span><span class="re-name">Deputy Chief of Police</span><span class="re-desc">Co-Leader des LSPD</span><span class="re-badge gold">CO-LEAD</span></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">23</span><span class="re-name">Police Coordinator Chief</span><span class="re-desc">Mädchen für Alles</span><span class="re-badge gold">LEITUNG</span></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">22</span><span class="re-name">Assistant Chief</span><span class="re-desc">Kurator einer Abteilung</span><span class="re-badge gold">LEITUNG</span></div>
+        </div>
+
+        <!-- HIGH COMMAND -->
+        <div class="rank-tier-wrap" id="rtier-1">
+          <div class="tier-header-bar"><div class="tier-col">RANG</div><div class="tier-col">BEZEICHNUNG</div><div class="tier-col">FUNKTION</div><div class="tier-col">EBENE</div></div>
+          <div class="rank-entry"><span class="re-num">21</span><span class="re-name">Commander</span><span class="re-desc">Leiter einer Abteilung</span><span class="re-badge blue">HC</span></div>
+          <div class="rank-entry"><span class="re-num">20</span><span class="re-name">Deputy Commander</span><span class="re-desc">Co-Leiter einer Abteilung</span><span class="re-badge blue">HC</span></div>
+          <div class="rank-entry"><span class="re-num">19</span><span class="re-name">Instructor</span><span class="re-desc">Ausbilder Rang einer Abteilung</span><span class="re-badge blue">HC</span></div>
+        </div>
+
+        <!-- MITGLIEDER -->
+        <div class="rank-tier-wrap" id="rtier-2">
+          <div class="tier-header-bar"><div class="tier-col">RANG</div><div class="tier-col">BEZEICHNUNG</div><div class="tier-col">FUNKTION</div><div class="tier-col">EBENE</div></div>
+          <div class="rank-entry"><span class="re-num">18</span><span class="re-name">Supervisory Officer</span><span class="re-desc">Höchster Rang ohne Leitung</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">17</span><span class="re-name">IHR Officer</span><span class="re-desc">HR/IAD Rang</span><span class="re-badge blue">SPECIAL</span></div>
+          <div class="rank-entry"><span class="re-num">16</span><span class="re-name">Captain</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">15</span><span class="re-name">Senior Lieutenant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">14</span><span class="re-name">Lieutenant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">13</span><span class="re-name">Senior Sergeant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">12</span><span class="re-name">Sergeant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">11</span><span class="re-name">Operator</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">10</span><span class="re-name">Senior Corporal</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">09</span><span class="re-name">Corporal</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">08</span><span class="re-name">IHR Trainee</span><span class="re-desc">HR/IAD Trainee</span><span class="re-badge blue">SPECIAL</span></div>
+          <div class="rank-entry"><span class="re-num">07</span><span class="re-name">Public Relations Officer</span><span class="re-desc">Media</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">06</span><span class="re-name">Senior Officer</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">05</span><span class="re-name">Officer II</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">04</span><span class="re-name">Officer I</span><span class="re-desc">Officer in Ausbildung</span><span class="re-badge grey">TRAINEE</span></div>
+          <div class="rank-entry"><span class="re-num">03</span><span class="re-name">Junior Officer</span><span class="re-desc">Officer in Ausbildung</span><span class="re-badge grey">TRAINEE</span></div>
+          <div class="rank-entry"><span class="re-num">02</span><span class="re-name">Rookie</span><span class="re-desc">Officer in Ausbildung</span><span class="re-badge grey">TRAINEE</span></div>
+          <div class="rank-entry"><span class="re-num">01</span><span class="re-name">Suspendiert</span><span class="re-desc">Einstellungsrang</span><span class="re-badge grey">ENTRY</span></div>
+        </div>
+
+        <!-- ALLE -->
+        <div class="rank-tier-wrap" id="rtier-3">
+          <div class="tier-header-bar"><div class="tier-col">RANG</div><div class="tier-col">BEZEICHNUNG</div><div class="tier-col">FUNKTION</div><div class="tier-col">EBENE</div></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">25</span><span class="re-name">Chief of Police</span><span class="re-desc">Leader des LSPD</span><span class="re-badge gold">LEADER</span></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">24</span><span class="re-name">Deputy Chief of Police</span><span class="re-desc">Co-Leader</span><span class="re-badge gold">CO-LEAD</span></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">23</span><span class="re-name">Police Coordinator Chief</span><span class="re-desc">Mädchen für Alles</span><span class="re-badge gold">LEITUNG</span></div>
+          <div class="rank-entry re-tier-gold"><span class="re-num">22</span><span class="re-name">Assistant Chief</span><span class="re-desc">Kurator einer Abteilung</span><span class="re-badge gold">LEITUNG</span></div>
+          <div class="rank-entry"><span class="re-num">21</span><span class="re-name">Commander</span><span class="re-desc">Leiter einer Abteilung</span><span class="re-badge blue">HC</span></div>
+          <div class="rank-entry"><span class="re-num">20</span><span class="re-name">Deputy Commander</span><span class="re-desc">Co-Leiter</span><span class="re-badge blue">HC</span></div>
+          <div class="rank-entry"><span class="re-num">19</span><span class="re-name">Instructor</span><span class="re-desc">Ausbilder Rang</span><span class="re-badge blue">HC</span></div>
+          <div class="rank-entry"><span class="re-num">18</span><span class="re-name">Supervisory Officer</span><span class="re-desc">Höchster ohne Leitung</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">17</span><span class="re-name">IHR Officer</span><span class="re-desc">HR/IAD</span><span class="re-badge blue">SPECIAL</span></div>
+          <div class="rank-entry"><span class="re-num">16</span><span class="re-name">Captain</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">15</span><span class="re-name">Senior Lieutenant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">14</span><span class="re-name">Lieutenant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">13</span><span class="re-name">Senior Sergeant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">12</span><span class="re-name">Sergeant</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">11</span><span class="re-name">Operator</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">10</span><span class="re-name">Senior Corporal</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">09</span><span class="re-name">Corporal</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">08</span><span class="re-name">IHR Trainee</span><span class="re-desc">HR/IAD Trainee</span><span class="re-badge blue">SPECIAL</span></div>
+          <div class="rank-entry"><span class="re-num">07</span><span class="re-name">Public Relations Officer</span><span class="re-desc">Media</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">06</span><span class="re-name">Senior Officer</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">05</span><span class="re-name">Officer II</span><span class="re-desc">normaler Officer</span><span class="re-badge grey">MEMBER</span></div>
+          <div class="rank-entry"><span class="re-num">04</span><span class="re-name">Officer I</span><span class="re-desc">Ausbildung</span><span class="re-badge grey">TRAINEE</span></div>
+          <div class="rank-entry"><span class="re-num">03</span><span class="re-name">Junior Officer</span><span class="re-desc">Ausbildung</span><span class="re-badge grey">TRAINEE</span></div>
+          <div class="rank-entry"><span class="re-num">02</span><span class="re-name">Rookie</span><span class="re-desc">Ausbildung</span><span class="re-badge grey">TRAINEE</span></div>
+          <div class="rank-entry"><span class="re-num">01</span><span class="re-name">Suspendiert</span><span class="re-desc">Einstellungsrang</span><span class="re-badge grey">ENTRY</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: DEPARTMENTS -->
+    <div class="app-page" id="tab-2">
+      <div class="dept-hero reveal">
+        <div class="dept-hero-bg"></div>
+        <div>
+          <div class="dept-hero-sub">03 — OPERATIVE EINHEITEN</div>
+          <div class="dept-hero-title">ABTEILUNGEN</div>
+        </div>
+      </div>
+
+      <div class="dept-main-grid" style="padding:0 0 60px;">
+        <div class="dept-card-new dept-big reveal">
+          <div class="dc-bar"></div>
+          <div class="dc-ghost">DIR</div>
+          <span class="dc-abbr">◆ DIREKTION</span>
+          <div class="dc-name">Direktion</div>
+          <div class="dc-desc">Die Direktion ist die höchste Instanz des LSPD und kümmert sich um sämtliche Managementaufgaben. Sie ermöglicht den reibungslosen Dienstbetrieb und ist zentraler Ansprechpartner für alle Abteilungen und Mitarbeiter. Hier werden die wichtigsten strategischen Entscheidungen getroffen.</div>
+          <div class="dc-tags"><span class="dc-tag">MANAGEMENT</span><span class="dc-tag">STRATEGIE</span><span class="dc-tag">FÜHRUNG</span></div>
+        </div>
+        <div class="dept-card-new reveal">
+          <div class="dc-bar"></div>
+          <div class="dc-ghost">PU</div>
+          <span class="dc-abbr">◆ PATROL UNIT</span>
+          <div class="dc-name">Patrol Unit</div>
+          <div class="dc-desc">Einstiegspunkt für alle neuen Mitglieder. Grundausbildung und Achievements.</div>
+          <div class="dc-tags"><span class="dc-tag">AUSBILDUNG</span><span class="dc-tag">PATROL</span></div>
+        </div>
+        <div class="dept-card-new reveal">
+          <div class="dc-bar"></div>
+          <div class="dc-ghost">HR</div>
+          <span class="dc-abbr">◆ HUMAN RESOURCE</span>
+          <div class="dc-name">HR</div>
+          <div class="dc-desc">Ausbildungen, Einstellungen und Personalentwicklung aller Officers auf allen Ebenen.</div>
+          <div class="dc-tags"><span class="dc-tag">PERSONAL</span><span class="dc-tag">EINSTELLUNGEN</span></div>
+        </div>
+        <div class="dept-card-new reveal">
+          <div class="dc-bar"></div>
+          <div class="dc-ghost">IAD</div>
+          <span class="dc-abbr">◆ INTERNAL AFFAIRS</span>
+          <div class="dc-name">I.A.D.</div>
+          <div class="dc-desc">Beschwerden gegen Officers — intern & extern. Kooperation mit FIBCO und Justiz.</div>
+          <div class="dc-tags"><span class="dc-tag">KONTROLLE</span><span class="dc-tag">FIBCO</span><span class="dc-tag">JUSTIZ</span></div>
+        </div>
+        <div class="dept-card-new reveal">
+          <div class="dc-bar"></div>
+          <div class="dc-ghost">DU</div>
+          <span class="dc-abbr">◆ DETECTIVE UNIT</span>
+          <div class="dc-name">Detective Unit</div>
+          <div class="dc-desc">Ermittlungen bei Crimes, Razzien-Beantragung. Zusammenarbeit mit LSCSD DU & FIB CID.</div>
+          <div class="dc-tags"><span class="dc-tag">ERMITTLUNG</span><span class="dc-tag">FIB</span><span class="dc-tag">RAZZIA</span></div>
+        </div>
+        <div class="dept-card-new reveal" style="background:linear-gradient(135deg,rgba(0,40,100,0.3),var(--surface));border:1px solid rgba(0,170,255,0.08);">
+          <div class="dc-bar"></div>
+          <div class="dc-ghost">SW</div>
+          <span class="dc-abbr">◆ SPECIAL WEAPONS</span>
+          <div class="dc-name" style="color:var(--gold);text-shadow:var(--glow-gold)">S.W.A.T.</div>
+          <div class="dc-desc">Spezialeinheit für schwere Verbrechen. Bankraub, Geiselnahmen, Act of Terrors. Geschult in EL, VHL und Taktik.</div>
+          <div class="dc-tags"><span class="dc-tag">EL</span><span class="dc-tag">VHL</span><span class="dc-tag">TAKTIK</span><span class="dc-tag">SPEZIALKRÄFTE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: VISION & GOALS -->
+    <div class="app-page" id="tab-3">
+      <div class="s">
+        <div class="vision-hero reveal">
+          <div class="s-tag">04 — Vision & Ziele</div>
+          <div class="vision-hero-text">Ich sehe im LSPD nicht nur eine Fraktion — sondern eine <strong>zentrale Säule</strong> für qualitativ hochwertiges RP. Als Leader möchte ich eine <strong>schlagkräftige, strukturierte und respektierte</strong> Organisation aufbauen.</div>
+        </div>
+
+        <div style="height:2px;"></div>
+
+        <div class="goals-mega-grid">
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">01</div><div class="gm-text">Zusammenarbeit zwischen staatlichen Organisationen aktiv verbessern</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">02</div><div class="gm-text">Aktive Undercover-Arbeit — Verhöre, Beweise sammeln, Ermittlungen stärken</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">03</div><div class="gm-text">Klare und professionelle Strukturen in allen Bereichen der Fraktion</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">04</div><div class="gm-text">Cross-Streifen mit anderen Staatsfraktionen zur Stärkung der Zusammenarbeit</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">05</div><div class="gm-text">Faire Aufstiegschancen für jeden — kein Bevorzugen einzelner Mitarbeiter</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">06</div><div class="gm-text">Aktives Ermitteln gegen Dienstvergehen — stärkeres IAD und FIBCO RP</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">07</div><div class="gm-text">Wöchentliche Zufriedenheitsumfragen — kontinuierliche Verbesserung der Fraktion</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">08</div><div class="gm-text">Stabile, starke Truppe aufbauen — Qualität über Quantität</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">09</div><div class="gm-text">Regelmäßige interne & externe Übungen sowie gemeinsame Events aller Staates</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">10</div><div class="gm-text">Aktive Präsenz bei Events — Airdrop, Ghetto-Events, MCL und Rangliste</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">11</div><div class="gm-text">Global Events: Das PD als aktiven Partner der Bürger von Los Santos positionieren</div></div>
+          <div class="goal-mega reveal"><div class="gm-bar"></div><div class="gm-num">12</div><div class="gm-text">Regelmäßiger Austausch mit anderen State-Leadern zur gemeinsamen Optimierung</div></div>
+        </div>
+
+        <div style="height:2px;margin-top:2px;"></div>
+
+        <div class="collab-section-grid">
+          <div class="collab-big reveal">
+            <h3>Fraktions-Kooperationen</h3>
+            <p>Als Leader des LSPD möchte ich jede staatliche Fraktion aktiv in das Ausbildungskonzept einbeziehen. Staatliche Organisationen sollten <strong style="color:var(--white)">zusammenarbeiten — nicht gegeneinander</strong>. Ich möchte den Austausch, die Gemeinschaft und das Vertrauen zwischen allen Staates fördern und langfristig stärken.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <span class="collab-tag">SANG</span><span class="collab-tag">EMS</span><span class="collab-tag">FIB</span><span class="collab-tag">FIBCO</span><span class="collab-tag">LSCSD</span><span class="collab-tag">Justiz</span><span class="collab-tag">Alle State-Leader</span>
+            </div>
+          </div>
+          <div class="collab-sm reveal">
+            <h4>Overwatch Schulung</h4>
+            <p>Gemeinsam mit der SANG — beste Flugkompetenz auf dem Server. Standort FZ. Geplant 1–2× pro Woche.</p>
+          </div>
+          <div class="collab-sm reveal">
+            <h4>EHK / IK Kurs</h4>
+            <p>Weiterhin durch das EMS geführt — täglich mit der Materie vertraut. Alle 15 Tage für konstante Qualität.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: EXPERIENCE -->
+    <div class="app-page" id="tab-4">
+      <div class="exp-header-strip reveal">
+        <div>
+          <div class="s-tag" style="padding:0;margin-bottom:8px;">05 — Erfahrungen</div>
+          <h2 class="s-h" style="margin-bottom:0;font-size:clamp(30px,4vw,50px)">Track <span class="a">Record</span></h2>
+        </div>
+        <div class="exp-count-display">
+          <div class="ecd-item"><span class="ecd-num">17+</span><span class="ecd-label">Positionen</span></div>
+          <div class="ecd-item"><span class="ecd-num">2</span><span class="ecd-label">Server</span></div>
+          <div class="ecd-item"><span class="ecd-num">5+</span><span class="ecd-label">Leader Rollen</span></div>
+        </div>
+      </div>
+
+      <div class="exp-main-layout">
+        <div class="exp-server-block reveal">
+          <div class="esb-header">
+            <div class="esb-server-name">Grand-Roleplay</div>
+            <div class="esb-sub">Server 01 · 02 · 03 · 04 · Jeweils höchste Ränge</div>
+          </div>
+          <div class="esb-roles">
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">SAHP</div><span class="esb-r-badge leader">LEADER</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">FIB</div><span class="esb-r-badge">ASST. DIRECTOR</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">LSPD SWAT</div><span class="esb-r-badge">DEP. CO-LEADER</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">EMS</div><span class="esb-r-badge">CO-LEADER</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Vagos</div><span class="esb-r-badge leader">LEADER</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Bloods</div><span class="esb-r-badge">CO-LEADER</span></div>
+          </div>
+        </div>
+
+        <div class="exp-server-block reveal">
+          <div class="esb-header">
+            <div class="esb-server-name">Majestic-RP</div>
+            <div class="esb-sub">Jeweils höchste Ränge · Mehrfach bekleidet</div>
+          </div>
+          <div class="esb-roles">
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">LSPD — DU</div><span class="esb-r-badge">ASST. CHIEF</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">EMS</div><span class="esb-r-badge leader">DIRECTOR</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">LSCSD</div><span class="esb-r-badge">UNDERSHERIFF</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">SANG</div><span class="esb-r-badge leader">LEADER</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">GOV</div><span class="esb-r-badge">MINISTER / VIZE GOV</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">FIB</div><span class="esb-r-badge">DEP. DIRECTOR</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Ballas</div><span class="esb-r-badge">VIZE</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Vagos</div><span class="esb-r-badge">VIZE</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Grove Street</div><span class="esb-r-badge">12ER</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Bloods</div><span class="esb-r-badge">VIZE</span></div>
+            <div class="esb-role"><div class="esb-r-dot"></div><div class="esb-r-text">Marabunta</div><span class="esb-r-badge leader">LEADER</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 5: ABOUT -->
+    <div class="app-page" id="tab-5">
+      <div class="s">
+        <div class="s-tag">06 — Über Mich</div>
+        <h2 class="s-h reveal">Jan <span class="g">Contino</span></h2>
+
+        <div class="about-hero-strip reveal">
+          <div class="about-hero-left">
+            <span class="bq-mark">"</span>
+            <div class="big-quote">Ich bringe die nötige Erfahrung, Disziplin und Motivation mit, um ein starkes Team aufzubauen und das LSPD nachhaltig zu stärken.</div>
+            <div class="quote-by">// JAN CONTINO · CHIEF OF POLICE BEWERBER</div>
+          </div>
+          <div class="about-hero-right">
+            <div class="info-table">
+              <div class="it-row"><span class="it-key">Name</span><span class="it-val">JAN CONTINO</span></div>
+              <div class="it-row"><span class="it-key">Static ID</span><span class="it-val">4310</span></div>
+              <div class="it-row"><span class="it-key">Ø Online</span><span class="it-val">6–9 Std/Tag</span></div>
+              <div class="it-row"><span class="it-key">Neue Member</span><span class="it-val" style="color:var(--blue)">20–35 Personen</span></div>
+              <div class="it-row"><span class="it-key">Discord</span><span class="it-val" style="font-family:'Share Tech Mono';font-size:13px">Jan1308</span></div>
+              <div class="it-row"><span class="it-key">Discord ID</span><span class="it-val" style="font-size:11px;font-family:'Share Tech Mono'">849690980545462323</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pillar-grid">
+          <div class="pillar-card reveal">
+            <div class="pc-num">01</div>
+            <div class="pc-title">Langjährige Erfahrung</div>
+            <div class="pc-text">Ich habe auf mehreren GTA-RP Servern in zahlreichen Führungspositionen gedient — sowohl als Leader als auch als Co-Leader. Ich weiß, worauf es ankommt, eine Staate zu leiten und ein Team zusammenzuhalten.</div>
+          </div>
+          <div class="pillar-card reveal">
+            <div class="pc-num">02</div>
+            <div class="pc-title">Belastbarkeit & Stärke</div>
+            <div class="pc-text">Ich stelle mich gerne schwierigen Gesprächen und Situationen. Stress und Trubel sind für mich kein Hindernis. Ich bleibe in jeder Lage professionell und lösungsorientiert.</div>
+          </div>
+          <div class="pillar-card reveal">
+            <div class="pc-num">03</div>
+            <div class="pc-title">Team & Community First</div>
+            <div class="pc-text">Für mich stehen Teamwork, Spaß und Professionalität an erster Stelle. Ich bin für jeden da — ohne Bevorzugung. Faire Aufstiegschancen und offene Kommunikation sind mir heilig.</div>
+          </div>
+          <div class="pillar-card reveal">
+            <div class="pc-num">04</div>
+            <div class="pc-title">Klare Vision</div>
+            <div class="pc-text">Ich sehe im LSPD eine zentrale Säule für qualitativ hochwertiges Roleplay. Als Chief of Police werde ich das LSPD zu einer schlagkräftigen, strukturierten und respektierten Organisation machen.</div>
+          </div>
+        </div>
+
+        <div class="closing-banner reveal">
+          <div class="cb-grid-bg"></div>
+          <div class="cb-glow"></div>
+          <div class="cb-pre">// LEADER APPLICATION — CHIEF OF POLICE — LSPD</div>
+          <div class="cb-name">JAN CONTINO</div>
+          <div class="cb-title">CHIEF OF POLICE · ID 4310</div>
+          <div class="cb-thanks">Vielen Dank für das Lesen meiner Bewerbung.<br>Ich freue mich auf ein Vorstellungsgespräch und ein positives Feedback. 🫡<br><br>Discord: <strong style="color:rgba(0,170,255,0.5)">Jan1308</strong> · ID: <strong style="color:rgba(0,170,255,0.5)">849690980545462323</strong></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end app-pages -->
+</div><!-- end page-app -->
+
+<script>
+// ─── PARTICLES ───
+const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');
+let W,H,pts=[];
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+class P{constructor(){this.r();}r(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.25;this.vy=-Math.random()*.4-.05;this.s=Math.random()*1.2+.2;this.a=Math.random()*.4+.05;this.l=Math.random();}u(){this.x+=this.vx;this.y+=this.vy;this.l-=.002;if(this.l<=0||this.y<-5)this.r();}d(){ctx.save();ctx.globalAlpha=this.a*this.l;ctx.fillStyle=Math.random()>.9?'#ffcc00':'#00aaff';ctx.beginPath();ctx.arc(this.x,this.y,this.s,0,Math.PI*2);ctx.fill();ctx.restore();}}
+for(let i=0;i<100;i++)pts.push(new P());
+(function loop(){ctx.clearRect(0,0,W,H);pts.forEach(p=>{p.u();p.d();});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<90){ctx.save();ctx.globalAlpha=(1-d/90)*.06;ctx.strokeStyle='#00aaff';ctx.lineWidth=.4;ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke();ctx.restore();}}requestAnimationFrame(loop);})();
+
+// ─── TABS ───
+function showTab(i){
+  document.querySelectorAll('.nav-tab').forEach((t,idx)=>t.classList.toggle('active',idx===i));
+  document.querySelectorAll('.app-page').forEach((p,idx)=>p.classList.toggle('active',idx===i));
+  setTimeout(triggerReveal,100);
+}
+
+// ─── RANK TIER TABS ───
+function showRankTier(i){
+  document.querySelectorAll('.rtab').forEach((t,idx)=>t.classList.toggle('active',idx===i));
+  document.querySelectorAll('.rank-tier-wrap').forEach((w,idx)=>w.classList.toggle('active',idx===i));
+}
+
+// ─── SCROLL REVEAL ───
+function triggerReveal(){
+  const page=document.querySelector('.app-page.active');
+  if(!page)return;
+  const els=page.querySelectorAll('.reveal');
+  els.forEach((el,i)=>{
+    el.style.opacity='0';el.style.transform='translateY(20px)';
+    setTimeout(()=>{el.style.opacity='1';el.style.transform='translateY(0)';},i*80);
+  });
+  page.addEventListener('scroll',()=>{
+    page.querySelectorAll('.reveal').forEach(el=>{
+      const rect=el.getBoundingClientRect();
+      if(rect.top<window.innerHeight-60){el.style.opacity='1';el.style.transform='translateY(0)';}
+    });
+  });
+}
+
+// ─── INIT ───
+triggerReveal();
+</script>
+</body>
+</html>
