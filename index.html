@@ -1,1 +1,1028 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLASSIFIED // S.A.N.G. COMMAND DOSSIER</title>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts: Share Tech Mono & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030503;
+            --bg-grid: rgba(35, 60, 30, 0.08);
+            --panel-bg: rgba(10, 18, 12, 0.92);
+            --panel-border: rgba(68, 97, 63, 0.4);
+            --army-green: #293826;
+            --army-accent: #44613f;
+            --army-bright: #5cd94b;
+            --top-secret-red: #e62817;
+            --red-glow: rgba(230, 40, 23, 0.4);
+            --hud-amber: #ffaa00;
+            --amber-glow: rgba(255, 170, 0, 0.3);
+            --terminal-green: #00ff66;
+            --text-main: #c4d4c2;
+            --text-bright: #ffffff;
+            --text-dim: #60755d;
+            --border-dim: #1d2c1c;
+            --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+            --font-sans: 'Inter', sans-serif;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            background-image: 
+                linear-gradient(var(--bg-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* --- CRT overlay & tactical scanline animation --- */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%), 
+                        linear-gradient(90deg, rgba(255,0,0,0.02), rgba(0,255,0,0.01), rgba(0,0,255,0.02));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .scanline-beam {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 8px;
+            background: linear-gradient(180deg, transparent, rgba(56, 217, 75, 0.15), transparent);
+            z-index: 9998;
+            pointer-events: none;
+            animation: scanAnim 8s linear infinite;
+        }
+
+        @keyframes scanAnim {
+            0% { top: -20px; }
+            100% { top: 105vh; }
+        }
+
+        /* --- AUDIO & STATUS FLOATING HUD TOGGLE --- */
+        .hud-controls {
+            position: fixed;
+            top: 45px;
+            right: 20px;
+            z-index: 10001;
+            display: flex;
+            gap: 10px;
+        }
+
+        .hud-btn {
+            background: rgba(10, 20, 10, 0.9);
+            border: 1px solid var(--army-accent);
+            color: var(--terminal-green);
+            padding: 6px 14px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .hud-btn:hover {
+            background: var(--army-accent);
+            color: #fff;
+            box-shadow: 0 0 12px var(--amber-glow);
+        }
+
+        .hud-btn.muted {
+            border-color: var(--top-secret-red);
+            color: var(--top-secret-red);
+        }
+
+        /* --- ENTRY GATE / TACTICAL DECRYPTION --- */
+        #entry-gate {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #020402;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s;
+        }
+
+        #entry-gate.unlocked {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .clearance-box {
+            border: 2px solid var(--top-secret-red);
+            background: rgba(12, 4, 4, 0.96);
+            padding: 35px;
+            max-width: 580px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(217, 43, 24, 0.35), inset 0 0 25px rgba(217, 43, 24, 0.15);
+            position: relative;
+            border-radius: 4px;
+        }
+
+        .clearance-box::before {
+            content: 'RESTRICTED SYSTEM // S.A.N.G. DECRYPTION TERMINAL';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--top-secret-red);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 2px 10px;
+            letter-spacing: 2px;
+        }
+
+        .terminal-logs {
+            background: #000;
+            border: 1px solid var(--border-dim);
+            padding: 15px;
+            height: 150px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            font-size: 0.82rem;
+            color: var(--terminal-green);
+            text-align: left;
+            line-height: 1.4;
+            box-shadow: inset 0 0 10px rgba(0,255,100,0.1);
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        .access-btn {
+            background: var(--top-secret-red);
+            color: #fff;
+            border: 1px solid #ff4d38;
+            padding: 14px 28px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(217, 43, 24, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            border-radius: 2px;
+        }
+
+        .access-btn:hover {
+            background: #f0321d;
+            box-shadow: 0 0 30px rgba(217, 43, 24, 0.9);
+            transform: translateY(-2px);
+        }
+
+        #access-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(217, 43, 24, 0.96);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        /* --- CLASSIFIED TOP BANNER --- */
+        .classification-bar {
+            background-color: var(--top-secret-red);
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 3px;
+            padding: 7px 10px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(217, 43, 24, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--terminal-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--terminal-green);
+            animation: pulseDot 1.5s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        /* --- MAIN WRAPPER & HEADER --- */
+        .main-wrapper {
+            max-width: 1040px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .dossier-header {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-left: 5px solid var(--top-secret-red);
+            padding: 35px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stamp {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            border: 3px double var(--top-secret-red);
+            color: var(--top-secret-red);
+            font-size: 1.4rem;
+            font-weight: 900;
+            padding: 4px 14px;
+            text-transform: uppercase;
+            transform: rotate(-6deg);
+            opacity: 0.9;
+            pointer-events: none;
+            letter-spacing: 3px;
+            animation: stampGlow 3s infinite alternate;
+        }
+
+        @keyframes stampGlow {
+            0% { opacity: 0.75; box-shadow: 0 0 5px rgba(217, 43, 24, 0.2); }
+            100% { opacity: 1; box-shadow: 0 0 20px rgba(217, 43, 24, 0.6); }
+        }
+
+        .dossier-title {
+            color: #fff;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .dossier-subtitle {
+            color: var(--hud-amber);
+            font-size: 0.88rem;
+            margin-bottom: 25px;
+            border-bottom: 1px dashed var(--panel-border);
+            padding-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        /* METADATA GRID */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .meta-field {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-dim);
+            padding: 10px 14px;
+            border-radius: 3px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .meta-field:hover {
+            border-color: var(--army-accent);
+            background: rgba(15, 28, 15, 0.5);
+        }
+
+        .meta-field label {
+            display: block;
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .meta-field span {
+            font-size: 0.92rem;
+            color: var(--text-bright);
+            font-weight: bold;
+        }
+
+        /* TYPEWRITER CURSOR EFFECT */
+        .typewriter-text::after {
+            content: '█';
+            display: inline-block;
+            margin-left: 3px;
+            font-size: 0.8em;
+            color: var(--terminal-green);
+            animation: blink 0.8s infinite;
+        }
+        .typewriter-text.done::after {
+            display: none;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* --- DOSSIER SECTIONS --- */
+        .dossier-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 28px;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+            border-radius: 4px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .dossier-section:hover {
+            border-color: var(--army-accent);
+        }
+
+        .section-heading {
+            color: var(--hud-amber);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        p {
+            font-family: var(--font-sans);
+            font-size: 0.92rem;
+            margin-bottom: 12px;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 10px;
+        }
+
+        ul li {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        ul li::before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            top: 2px;
+            color: var(--hud-amber);
+            font-size: 0.75rem;
+        }
+
+        /* --- TABLES --- */
+        .dossier-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 15px;
+            border: 1px solid var(--border-dim);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .dossier-table th, .dossier-table td {
+            padding: 11px 14px;
+            text-align: left;
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--border-dim);
+        }
+
+        .dossier-table th {
+            color: var(--hud-amber);
+            background: rgba(15, 25, 15, 0.9);
+            text-transform: uppercase;
+            font-size: 0.73rem;
+            letter-spacing: 1.5px;
+            font-weight: bold;
+        }
+
+        .dossier-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .dossier-table tbody tr:hover {
+            background: rgba(41, 56, 38, 0.35);
+        }
+
+        .dossier-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 0.68rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border: 1px solid var(--border-dim);
+            border-radius: 2px;
+            text-transform: uppercase;
+        }
+
+        .badge-red { color: #ff5e4d; border-color: var(--top-secret-red); background: rgba(217, 43, 24, 0.15); }
+        .badge-amber { color: var(--hud-amber); border-color: var(--hud-amber); background: rgba(255, 170, 0, 0.12); }
+        .badge-green { color: var(--terminal-green); border-color: var(--army-accent); background: rgba(41, 56, 38, 0.3); }
+
+        /* GRID CARDS */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 16px;
+        }
+
+        .sub-box {
+            background: rgba(5, 10, 5, 0.7);
+            border: 1px solid var(--border-dim);
+            padding: 18px;
+            border-left: 4px solid var(--army-accent);
+            border-radius: 3px;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .sub-box:hover {
+            transform: translateY(-2px);
+            border-color: var(--army-bright);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .sub-box.red {
+            border-left-color: var(--top-secret-red);
+        }
+
+        .sub-box.red:hover {
+            border-color: #ff5e4d;
+        }
+
+        .sub-box h4 {
+            color: #fff;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .sub-box p {
+            font-size: 0.85rem;
+            margin-bottom: 0;
+            color: var(--text-main);
+        }
+
+        /* TAGS */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: rgba(25, 40, 25, 0.8);
+            border: 1px solid var(--army-accent);
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            color: var(--text-bright);
+            border-radius: 3px;
+            transition: all 0.2s ease;
+            cursor: default;
+        }
+
+        .tag:hover {
+            background: var(--army-accent);
+            color: #fff;
+            box-shadow: 0 0 8px var(--amber-glow);
+            transform: scale(1.03);
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            border-top: 1px solid var(--border-dim);
+            margin-top: 50px;
+            letter-spacing: 2px;
+        }
+
+        @media(max-width: 768px) {
+            .meta-grid { grid-template-columns: 1fr; }
+            .dossier-table th, .dossier-table td { padding: 8px 10px; font-size: 0.78rem; }
+            .hud-controls { top: auto; bottom: 15px; right: 15px; }
+            .stamp { position: static; display: inline-block; transform: none; margin-bottom: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SCANLINE ANIMATION OVERLAY -->
+    <div class="scanline-beam"></div>
+
+    <!-- FLOATING HUD AUDIO CONTROL -->
+    <div class="hud-controls">
+        <button id="audio-toggle-btn" class="hud-btn" onclick="toggleMute()">
+            <i class="fa-solid fa-volume-high" id="audio-icon"></i> <span id="audio-status-text">AUDIO: ON</span>
+        </button>
+    </div>
+
+    <!-- ENTRY GATE (TACTICAL TERMINAL DECRYPTION) -->
+    <div id="entry-gate">
+        <div class="clearance-box">
+            <div id="terminal-logs" class="terminal-logs">
+                <div class="log-line">> ESTABLISHING HANDSHAKE TO S.A.N.G. COMMAND SERVER...</div>
+                <div class="log-line">> WAITING FOR OPERATOR AUTHENTICATION...</div>
+            </div>
+            <button id="auth-btn" class="access-btn" onclick="startDecryption()">
+                <i class="fa-solid fa-lock"></i> IDENTITÄT BESTÄTIGEN & ENTSCHLÜSSELN
+            </button>
+            <div id="access-overlay">
+                <i class="fa-solid fa-shield-halved" style="font-size: 3.5rem; margin-bottom: 15px;"></i>
+                ZUGRIFF GEWÄHRT
+            </div>
+        </div>
+    </div>
+
+    <!-- CLASSIFIED TOP BANNER -->
+    <div class="classification-bar">
+        <span>[CLASSIFIED] // S.A.N.G. COMMAND DOSSIER // DR. JENNY CONTINO</span>
+        <span class="status-pill"><span class="status-dot"></span> ENCRYPTED LIVE LINK</span>
+    </div>
+
+    <!-- MAIN DOSSIER CONTENT -->
+    <div class="main-wrapper">
+        
+        <header class="dossier-header">
+            <div class="stamp">TOP SECRET</div>
+            <h1 class="dossier-title">BEWERBUNG ALS GENERAL OF THE ARMY</h1>
+            <div class="dossier-subtitle">SAN ANDREAS NATIONAL GUARD (S.A.N.G.) // OFFIZIELLES DOSSIER & LEADERSCHAFTSKONZEPT</div>
+            
+            <div class="meta-grid">
+                <div class="meta-field">
+                    <label>Bewerber / Identität</label>
+                    <span class="typewriter-text" data-text="DrJenny Contino"></span>
+                </div>
+                <div class="meta-field">
+                    <label>Static ID</label>
+                    <span class="typewriter-text" data-text="4310"></span>
+                </div>
+                <div class="meta-field">
+                    <label>Angestrebte Position</label>
+                    <span class="typewriter-text" data-text="General of the Army (Rang 25)"></span>
+                </div>
+                <div class="meta-field">
+                    <label>Durchschn. Onlinezeit</label>
+                    <span class="typewriter-text" data-text="6 - 9 Stunden täglich"></span>
+                </div>
+                <div class="meta-field">
+                    <label>Mitgebrachte Truppe</label>
+                    <span class="typewriter-text" data-text="+20 bis 30 Soldaten"></span>
+                </div>
+                <div class="meta-field">
+                    <label>Discord Tag</label>
+                    <span class="typewriter-text" data-text="jan1308 (849690980545462323)"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 1. Rangstruktur -->
+        <section class="dossier-section">
+            <h2 class="section-heading"><i class="fa-solid fa-sitemap"></i> 1. Rangstruktur & Hierarchie</h2>
+            <table class="dossier-table">
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th>Bezeichnung</th>
+                        <th>Kategorie</th>
+                        <th>Funktion & Aufgabenbereich</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>25</strong></td>
+                        <td>General of the Army</td>
+                        <td><span class="badge badge-red">Genstab</span></td>
+                        <td>Leader der SANG</td>
+                    </tr>
+                    <tr>
+                        <td><strong>24</strong></td>
+                        <td>General</td>
+                        <td><span class="badge badge-red">Genstab</span></td>
+                        <td>Co-Leader der SANG</td>
+                    </tr>
+                    <tr>
+                        <td><strong>23</strong></td>
+                        <td>Lieutenant General</td>
+                        <td><span class="badge badge-red">Genstab</span></td>
+                        <td>Mädchen für Alles</td>
+                    </tr>
+                    <tr>
+                        <td><strong>22</strong></td>
+                        <td>Major General</td>
+                        <td><span class="badge badge-red">Genstab</span></td>
+                        <td>Kurator einer Abteilung</td>
+                    </tr>
+                    <tr>
+                        <td><strong>21</strong></td>
+                        <td>Lieutenant Colonel</td>
+                        <td><span class="badge badge-amber">High Command</span></td>
+                        <td>Leiter einer Abteilung</td>
+                    </tr>
+                    <tr>
+                        <td><strong>20</strong></td>
+                        <td>Major</td>
+                        <td><span class="badge badge-amber">High Command</span></td>
+                        <td>Co-Leiter einer Abteilung</td>
+                    </tr>
+                    <tr>
+                        <td><strong>19</strong></td>
+                        <td>Captain</td>
+                        <td><span class="badge badge-amber">High Command</span></td>
+                        <td>Ausbilder einer Abteilung</td>
+                    </tr>
+                    <tr>
+                        <td><strong>18</strong></td>
+                        <td>First Lieutenant</td>
+                        <td><span class="badge badge-green">Mitglieder</span></td>
+                        <td>Höchster Rang ohne Leitung</td>
+                    </tr>
+                    <tr>
+                        <td><strong>17 - 05</strong></td>
+                        <td>Second Lieutenant bis Specialist</td>
+                        <td><span class="badge badge-green">Mitglieder</span></td>
+                        <td>Normaler Soldat / Einsatzkraft</td>
+                    </tr>
+                    <tr>
+                        <td><strong>04 - 02</strong></td>
+                        <td>PFC, Private, Rekrut</td>
+                        <td><span class="badge badge-green">Ausbildung</span></td>
+                        <td>Soldat in Ausbildung</td>
+                    </tr>
+                    <tr>
+                        <td><strong>01</strong></td>
+                        <td>Suspendiert</td>
+                        <td><span class="badge badge-red">Status</span></td>
+                        <td>Einstellungsrang / Disziplinarstatus</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 2. Abteilungen -->
+        <section class="dossier-section">
+            <h2 class="section-heading"><i class="fa-solid fa-layer-group"></i> 2. Abteilungen der SANG</h2>
+            <div class="grid-2">
+                <div class="sub-box red">
+                    <h4>Generalstab</h4>
+                    <p>Höchste Instanz für Management, reibungslosen Dienstablauf und zentraler Ansprechpartner für alle Abteilungen und Mitarbeiter.</p>
+                </div>
+                <div class="sub-box">
+                    <h4>Infanterie (INF)</h4>
+                    <p>Auffangbecken für neue SANG-Mitglieder. Vermittlung von Grundausbildungen, Torwache sowie Patrouillen in Los Santos und Cayo Perico.</p>
+                </div>
+                <div class="sub-box">
+                    <h4>Human Resources (HR)</h4>
+                    <p>Verantwortlich für Rekrutierungen, Einstellungen sowie die strukturierte Ausbildung aller neuen Soldaten.</p>
+                </div>
+                <div class="sub-box">
+                    <h4>Military Police (MP)</h4>
+                    <p>Bearbeitung interner und externer Beschwerden. Enge und professionelle Zusammenarbeit mit dem FIBCO und der Justiz.</p>
+                </div>
+                <div class="sub-box">
+                    <h4>Air Force (AF)</h4>
+                    <p>Luftraumüberwachung, Nahunterstützung bei Schießereien, Aufklärung aus der Luft, Fallschirmeinsätze sowie VIP-/Truppentransporte.</p>
+                </div>
+                <div class="sub-box red">
+                    <h4>Black Ops (B.O)</h4>
+                    <p>Spezialeinheit für Schwerstkriminalität (Bankraube, Geiselnahmen, Terrorakte). Intensiv geschult in EL, VHL und Taktik.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Zusammenarbeit -->
+        <section class="dossier-section">
+            <h2 class="section-heading"><i class="fa-solid fa-handshake"></i> 3. Zusammenarbeit mit anderen Fraktionen</h2>
+            <p>Als Leader der SANG ist es mein Ziel, jede staatliche Fraktion aktiv in das Ausbildungskonzept einzubeziehen, um den Austausch und das gegenseitige Verständnis nachhaltig zu stärken.</p>
+            <ul>
+                <li>Schluss mit dem Gegeneinander-Arbeiten – staatliche Organisationen müssen als geschlossene Einheit agieren.</li>
+                <li>Planung regelmäßiger gemeinsamer Aktionen und Übungen zur Förderung von Zusammenhalt und offenem Dialog.</li>
+            </ul>
+        </section>
+
+        <!-- 4. Warum ich -->
+        <section class="dossier-section">
+            <h2 class="section-heading"><i class="fa-solid fa-user-shield"></i> 4. Warum sollte ich Leader werden?</h2>
+            <p>Durch langjährige Staats- und Crime-Erfahrung weiß ich genau, worauf es bei der Leitung einer Organisation ankommt.</p>
+            <ul>
+                <li>Belastbar bei Stress und Großlagen; professioneller Umgang mit schwierigen Gesprächen.</li>
+                <li>Fokus auf Teamwork, Spaß und höchste Professionalität – stets ein offenes Ohr für alle Mitarbeiter.</li>
+                <li>Die SANG ist nicht nur eine Fraktion, sondern eine zentrale Säule für qualitativ hochwertiges RP.</li>
+            </ul>
+        </section>
+
+        <!-- 5. Einzigartige Ideen -->
+        <section class="dossier-section">
+            <h2 class="section-heading"><i class="fa-solid fa-lightbulb"></i> 5. Einzigartige Ideen & Ziele</h2>
+            <div class="grid-2">
+                <div>
+                    <ul>
+                        <li>Cross-Streifen mit anderen Staatsfraktionen zur Kooperationsförderung.</li>
+                        <li>Faire Aufstiegschancen für jeden Mitarbeiter ohne Bevorzugung.</li>
+                        <li>Aktive Ermittlung gegen Dienstvergehen gemeinsam mit dem FIB (Stärkung von IAD/MP/FIBCO RP).</li>
+                        <li>Wöchentliche Zufriedenheitsumfragen durch die Leaderschaft.</li>
+                    </ul>
+                </div>
+                <div>
+                    <ul>
+                        <li>Regelmäßige interne und externe Übungen sowie Events zur Truppenpflege.</li>
+                        <li>Aktive Anfahrt aller Events (Airdrops, Ghetto-Events, MCL, Ranglisten).</li>
+                        <li>Global Events, um zu zeigen, dass die SANG mehr als reine Kampfkraft ist.</li>
+                        <li>Konstruktiver Austausch mit externen Fraktionsleadern.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Zur Person & Erfahrungen -->
+        <section class="dossier-section">
+            <h2 class="section-heading"><i class="fa-solid fa-award"></i> 6. RP-Erfahrung & Qualifikationen</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <p style="color: var(--hud-amber); font-weight: bold; margin-bottom: 8px;">Grand-Roleplay (Server 01 - 04)</p>
+                <div class="tags-container">
+                    <span class="tag">SAHP Leader</span>
+                    <span class="tag">FIB Assistant Director</span>
+                    <span class="tag">LSPD SWAT Deputy CO-Leader</span>
+                    <span class="tag">EMS CO-Leader</span>
+                    <span class="tag">Vagos Leader</span>
+                    <span class="tag">Bloods Co-Lead</span>
+                </div>
+            </div>
+
+            <div>
+                <p style="color: var(--hud-amber); font-weight: bold; margin-bottom: 8px;">Majestic-RP</p>
+                <div class="tags-container">
+                    <span class="tag">LSPD Leader (3 Monate) & Vize</span>
+                    <span class="tag">FIB Deputy Director</span>
+                    <span class="tag">GOV Vice Gouverneur</span>
+                    <span class="tag">SANG Leader & Vize</span>
+                    <span class="tag">SD Undersheriff</span>
+                    <span class="tag">EMS Leader (1,5 Monate)</span>
+                    <span class="tag">WN Co-Leader</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Schlusswort -->
+        <section class="dossier-section" style="text-align: center;">
+            <h2 class="section-heading" style="justify-content: center;"><i class="fa-solid fa-file-signature"></i> 7. Schlusswort</h2>
+            <p>Vielen Dank für das Lesen meiner Bewerbung. Ich blicke einem privaten Feedback und der Gelegenheit eines persönlichen Vorstellungsgesprächs gespannt entgegen.</p>
+            <p style="color: var(--hud-amber); font-weight: bold; margin-top: 15px; font-family: var(--font-mono); font-size: 1rem;">gez. DrJenny Contino (Static ID 4310)</p>
+        </section>
+
+    </div>
+
+    <footer>
+        SAN ANDREAS NATIONAL GUARD // SECURE DOSSIER SYSTEM // CLASSIFIED EYES ONLY
+    </footer>
+
+    <!-- OPTIMIZED WEB AUDIO API SYNTHESIZER & SOUND ENGINE -->
+    <script>
+        let audioMuted = false;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleMute() {
+            audioMuted = !audioMuted;
+            const btn = document.getElementById('audio-toggle-btn');
+            const icon = document.getElementById('audio-icon');
+            const statusText = document.getElementById('audio-status-text');
+
+            if (audioMuted) {
+                btn.classList.add('muted');
+                icon.className = 'fa-solid fa-volume-xmark';
+                statusText.innerText = 'AUDIO: OFF';
+            } else {
+                btn.classList.remove('muted');
+                icon.className = 'fa-solid fa-volume-high';
+                statusText.innerText = 'AUDIO: ON';
+                playBeep(800, 'sine', 0.05, 0.05);
+            }
+        }
+
+        // TACTICAL SOUND GENERATORS
+        function playBeep(freq = 800, type = 'sine', duration = 0.05, gainValue = 0.05) {
+            if (audioMuted) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(gainValue, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.error("Audio error:", e);
+            }
+        }
+
+        function playKeypressClick() {
+            if (audioMuted) return;
+            // Mechanical synth click sound
+            const randomFreq = 1200 + Math.random() * 600;
+            playBeep(randomFreq, 'triangle', 0.02, 0.015);
+        }
+
+        function playHoverTick() {
+            if (audioMuted) return;
+            playBeep(1800, 'sine', 0.015, 0.01);
+        }
+
+        function playGrantedSoundSequence() {
+            if (audioMuted) return;
+            initAudio();
+            // Multi-step military confirmation chime
+            const now = audioCtx.currentTime;
+            
+            const tones = [
+                { f: 440, t: 0 },
+                { f: 554, t: 0.08 },
+                { f: 659, t: 0.16 },
+                { f: 880, t: 0.24 }
+            ];
+
+            tones.forEach(tone => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(tone.f, now + tone.t);
+                gain.gain.setValueAtTime(0.06, now + tone.t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.t + 0.2);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + tone.t);
+                osc.stop(now + tone.t + 0.2);
+            });
+        }
+
+        // DECRYPTION INTERACTION LOGIC
+        function startDecryption() {
+            initAudio();
+            const btn = document.getElementById('auth-btn');
+            const logs = document.getElementById('terminal-logs');
+            const overlay = document.getElementById('access-overlay');
+            const gate = document.getElementById('entry-gate');
+            
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+
+            playBeep(500, 'sawtooth', 0.1, 0.08);
+
+            const logMessages = [
+                "> INITIALIZING RSA 4096-BIT KEY EXCHANGE...",
+                "> VERIFYING BIOMETRIC HASH CLEARANCE...",
+                "> DECRYPTING COMMAND DOSSIER PAYLOAD [AES-256]...",
+                "> INTEGRITY CHECK: 100% OK",
+                "> ACCESS GRANTED BY S.A.N.G. HIGH COUNCIL."
+            ];
+
+            let index = 0;
+            const interval = setInterval(() => {
+                if(index < logMessages.length) {
+                    const line = document.createElement('div');
+                    line.className = 'log-line';
+                    line.innerText = logMessages[index];
+                    logs.appendChild(line);
+                    logs.scrollTop = logs.scrollHeight;
+                    
+                    playBeep(700 + (index * 200), 'sawtooth', 0.04, 0.04);
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        overlay.style.opacity = '1';
+                        playGrantedSoundSequence();
+                        setTimeout(() => {
+                            gate.classList.add('unlocked');
+                            triggerTypewriter();
+                            attachHoverListeners();
+                        }, 750);
+                    }, 350);
+                }
+            }, 260);
+        }
+
+        // TYPEWRITER EFFECT WITH KEY SOUNDS
+        function triggerTypewriter() {
+            const elements = document.querySelectorAll('.typewriter-text');
+            elements.forEach((el, elIdx) => {
+                const text = el.getAttribute('data-text');
+                el.innerText = '';
+                let i = 0;
+                setTimeout(() => {
+                    const timer = setInterval(() => {
+                        if (i < text.length) {
+                            el.innerText += text.charAt(i);
+                            playKeypressClick();
+                            i++;
+                        } else {
+                            clearInterval(timer);
+                            el.classList.add('done');
+                        }
+                    }, 40);
+                }, elIdx * 180);
+            });
+        }
+
+        // HOVER SOUND EFFECTS FOR INTERACTIVE ELEMENTS
+        function attachHoverListeners() {
+            const interactiveElements = document.querySelectorAll('.sub-box, .tag, .dossier-table tbody tr, .hud-btn, .meta-field');
+            interactiveElements.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    playHoverTick();
+                });
+            });
+        }
+    </script>
+</body>
+</html>
